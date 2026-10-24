@@ -1,14 +1,17 @@
-
-name: Compilar PHP 5.6.40 Parcheado para Windows x64 TS Final
+name: BUILD-FINAL-PROTEGIDO
 on: [workflow_dispatch]
 
 jobs:
   build:
     runs-on: windows-2022
     steps:
-    - name: Descargar herramientas de PHP SDK (Rama Antigua)
+    - name: Inicializar Herramientas Nativas de Windows
       run: |
-        git clone --branch master https://github.com C:\php-sdk
+        md C:\php-sdk
+        cd C:\php-sdk
+        Invoke-WebRequest -Uri "https://github.com" -OutFile "sdk.zip"
+        Expand-Archive -Path "sdk.zip" -DestinationPath "C:\tmp-sdk"
+        Move-Item -Path "C:\tmp-sdk\php-sdk-binary-tools-master\*" -Destination "C:\php-sdk"
         
     - name: Descargar Codigo Fuente de PHP 5.6.40
       run: |
