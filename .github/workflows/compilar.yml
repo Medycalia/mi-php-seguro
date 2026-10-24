@@ -1,4 +1,4 @@
-name: Compilar PHP 5.6.40 Parcheado para Windows x64 TS
+name: Compilar PHP 5.6.40 Parcheado para Windows x64 TS v2
 on: [workflow_dispatch]
 
 jobs:
