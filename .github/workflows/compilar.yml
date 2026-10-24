@@ -3,11 +3,11 @@ on: [workflow_dispatch]
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-2019
     steps:
-    - name: Descargar herramientas de PHP SDK
+    - name: Descargar herramientas de PHP SDK (Rama Antigua)
       run: |
-        git clone https://github.com C:\php-sdk
+        git clone --branch master https://github.com C:\php-sdk
         
     - name: Descargar Codigo Fuente de PHP 5.6.40
       run: |
@@ -19,19 +19,32 @@ jobs:
       run: |
         Invoke-WebRequest -Uri "https://githubusercontent.com" -OutFile "C:\php-build\php.patch"
         cd C:\php-build\php-src
-        & "C:\Program Files\Git\bin\patch.exe" -p1 < ..\php.patch
+        if (Test-Path "C:\Program Files\Git\bin\patch.exe") {
+          & "C:\Program Files\Git\bin\patch.exe" -p1 < ..\php.patch
+        } else {
+          & "patch" -p1 < ..\php.patch
+        }
+
+    - name: Configurar e Inicializar Estructura PHP SDK
+      shell: cmd
+      run: |
+        cd C:\php-sdk
+        call phpsdk_setvars.bat
+        cd C:\php-build\php-src
+        C:\php-sdk\bin\phpsdk_buildtree.bat php56
 
     - name: Compilar Binario Thread Safe x64
       shell: cmd
       run: |
-        call C:\php-sdk\phpsdk_setvars.bat
+        cd C:\php-sdk
+        call phpsdk_setvars.bat
         cd C:\php-build\php-src
         call buildconf.bat
-        call configure.bat --enable-zts --enable-object-out-of-memory-handler
+        call configure.bat --enable-zts --enable-object-out-of-memory-handler --disable-all --enable-cli
         nmake
 
     - name: Subir el PHP terminado
       uses: actions/upload-artifact@v4
       with:
         name: PHP-5.6.40-Protegido-Windows-x64
-        path: C:\php-build\php-src\x64\Release_TS\
+        path: C:\php-build\php-src\
