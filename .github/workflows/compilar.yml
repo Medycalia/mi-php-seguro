@@ -1,1 +1,51 @@
 
+name: Compilar PHP 5.6.40 Parcheado para Windows x64 TS Final
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - name: Descargar herramientas de PHP SDK (Rama Antigua)
+      run: |
+        git clone --branch master https://github.com C:\php-sdk
+        
+    - name: Descargar Codigo Fuente de PHP 5.6.40
+      run: |
+        Invoke-WebRequest -Uri "https://php.net" -OutFile "C:\php-src.zip"
+        Expand-Archive -Path "C:\php-src.zip" -DestinationPath "C:\php-build"
+        Rename-Item -Path "C:\php-build\php-5.6.40-src" -NewName "php-src"
+
+    - name: Descargar y Aplicar Parche RCE (CVE-2026-109618_9)
+      run: |
+        Invoke-WebRequest -Uri "https://githubusercontent.com" -OutFile "C:\php-build\php.patch"
+        cd C:\php-build\php-src
+        if (Test-Path "C:\Program Files\Git\bin\patch.exe") {
+          & "C:\Program Files\Git\bin\patch.exe" -p1 < ..\php.patch
+        } else {
+          & "patch" -p1 < ..\php.patch
+        }
+
+    - name: Configurar e Inicializar Estructura PHP SDK
+      shell: cmd
+      run: |
+        cd C:\php-sdk
+        call phpsdk_setvars.bat
+        cd C:\php-build\php-src
+        C:\php-sdk\bin\phpsdk_buildtree.bat php56
+
+    - name: Compilar Binario Thread Safe x64
+      shell: cmd
+      run: |
+        cd C:\php-sdk
+        call phpsdk_setvars.bat
+        cd C:\php-build\php-src
+        call buildconf.bat
+        call configure.bat --enable-zts --enable-object-out-of-memory-handler --disable-all --enable-cli
+        nmake
+
+    - name: Subir el PHP terminado
+      uses: actions/upload-artifact@v4
+      with:
+        name: PHP-5.6.40-Protegido-Windows-x64
+        path: C:\php-build\php-src\
